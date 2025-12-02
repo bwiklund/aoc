@@ -5,12 +5,12 @@ fn main() {
 
     println!("{0}", day1(0));
     println!("{0}", day1(1));
+    println!("{0}", day2());
 }
 
 fn day1(part: u32) -> i32 {
-    let input_str = read_to_string("./src/d1_input.txt").unwrap();
-
-    let directions: Vec<i32> = input_str
+    let directions: Vec<i32> = read_to_string("./src/d1_input.txt")
+        .unwrap()
         .lines()
         .map(|l| {
             let sign = match &l[0..1] {
@@ -41,4 +41,16 @@ fn day1(part: u32) -> i32 {
     }
 
     password
+}
+
+fn day2() -> i32 {
+    let ranges: Vec<(u64, u64)> = read_to_string("./src/d2_input.txt")
+        .unwrap()
+        .split(',')
+        .map(|s| s.split_once('-').unwrap())
+        .map(|(l, r)| (l.parse().unwrap(), r.parse().unwrap()))
+        .collect();
+
+    println!("{:?}", ranges);
+    0
 }
