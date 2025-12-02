@@ -3,13 +3,13 @@ use std::fs::read_to_string;
 fn main() {
     println!("AOC2025 Output:");
 
-    println!("{0}", day1(0));
-    println!("{0}", day1(1));
-    println!("{0}", day2());
+    println!("{:?}", day1(0));
+    println!("{:?}", day1(1));
+    println!("{:?}", day2());
 }
 
 fn day1(part: u32) -> i32 {
-    let directions: Vec<i32> = read_to_string("./src/d1_input.txt")
+    let directions = read_to_string("./src/d1_input.txt")
         .unwrap()
         .lines()
         .map(|l| {
@@ -21,7 +21,7 @@ fn day1(part: u32) -> i32 {
             let mag: i32 = l[1..].parse().unwrap();
             sign * mag
         })
-        .collect();
+        .collect::<Vec<i32>>();
 
     let size = 100;
     let mut pos = 50;
@@ -43,14 +43,26 @@ fn day1(part: u32) -> i32 {
     password
 }
 
-fn day2() -> i32 {
-    let ranges: Vec<(u64, u64)> = read_to_string("./src/d2_input.txt")
+fn day2() -> u64 {
+    // just gonna brute force p1 and assume p2 is going to be huge ranges of billions to punish me.
+
+    read_to_string("./src/d2_input.txt")
         .unwrap()
         .split(',')
         .map(|s| s.split_once('-').unwrap())
-        .map(|(l, r)| (l.parse().unwrap(), r.parse().unwrap()))
-        .collect();
-
-    println!("{:?}", ranges);
-    0
+        .map(|(l, r)| (l.parse::<u64>().unwrap(), r.parse::<u64>().unwrap()))
+        .map(|(min, max)| {
+            let mut repeats = 0;
+            for id in min..=max {
+                let as_str = id.to_string();
+                if as_str.len() % 2 == 0 {
+                    let mid = as_str.len() / 2;
+                    if as_str[..mid] == as_str[mid..] {
+                        repeats += 1;
+                    }
+                }
+            }
+            repeats
+        })
+        .sum()
 }
