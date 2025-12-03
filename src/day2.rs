@@ -1,6 +1,6 @@
 use std::fs::read_to_string;
 
-pub fn solve(part: i32) -> u64 {
+pub fn solve(part: u32) -> u64 {
     fn is_repetitions(digits: &Vec<u8>, stride: usize) -> bool {
         stride > 0
             && stride < digits.len()

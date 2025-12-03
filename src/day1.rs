@@ -1,6 +1,6 @@
 use std::fs::read_to_string;
 
-pub fn solve(part: u32) -> i32 {
+pub fn solve(part: u32) -> u32 {
     let directions = read_to_string("./src/d1_input.txt")
         .unwrap()
         .lines()
