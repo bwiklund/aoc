@@ -1,0 +1,31 @@
+use std::fs::read_to_string;
+
+pub fn solve(part: i32) -> u64 {
+    fn is_repetitions(digits: &Vec<u8>, stride: usize) -> bool {
+        stride > 0
+            && stride < digits.len()
+            && digits.len() % stride == 0
+            && (0..digits.len()).all(|i| digits[i] == digits[i % stride])
+    }
+
+    read_to_string("./src/d2_input.txt")
+        .unwrap()
+        .split(',')
+        .map(|s| s.split_once('-').unwrap())
+        .map(|(l, r)| (l.parse::<u64>().unwrap(), r.parse::<u64>().unwrap()))
+        .map(|(min, max)| {
+            (min..=max)
+                .filter(|id| {
+                    let digits = id.to_string().into_bytes();
+
+                    match part {
+                        0 => is_repetitions(&digits, digits.len() / 2),
+                        1 => (1..=(digits.len() / 2).max(1))
+                            .any(|stride| is_repetitions(&digits, stride)),
+                        _ => false,
+                    }
+                })
+                .sum::<u64>()
+        })
+        .sum()
+}
