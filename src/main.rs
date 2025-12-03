@@ -70,17 +70,17 @@ fn day2() -> u64 {
         .map(|s| s.split_once('-').unwrap())
         .map(|(l, r)| (l.parse::<u64>().unwrap(), r.parse::<u64>().unwrap()))
         .map(|(min, max)| {
-            let mut repeats = 0;
+            let mut sum = 0;
             for id in min..=max {
                 let as_str = id.to_string();
                 if as_str.len() % 2 == 0 {
                     let mid = as_str.len() / 2;
                     if as_str[..mid] == as_str[mid..] {
-                        repeats += 1;
+                        sum += id;
                     }
                 }
             }
-            repeats
+            sum
         })
         .sum()
 }
