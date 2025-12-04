@@ -1,5 +1,3 @@
-use std::fs::read_to_string;
-
 pub fn solve(part: u32) -> u64 {
     fn max_first(v: &[u64]) -> usize {
         let mut max_idx = 0;
@@ -11,7 +9,7 @@ pub fn solve(part: u32) -> u64 {
         max_idx
     }
 
-    read_to_string("./src/d3_input.txt")
+    std::fs::read_to_string("./src/day3_input.txt")
         .unwrap()
         .lines()
         .map(|l| {

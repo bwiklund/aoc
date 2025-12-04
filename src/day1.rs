@@ -1,7 +1,5 @@
-use std::fs::read_to_string;
-
 pub fn solve(part: u32) -> u32 {
-    let directions = read_to_string("./src/d1_input.txt")
+    let directions = std::fs::read_to_string("./src/day1_input.txt")
         .unwrap()
         .lines()
         .map(|l| {

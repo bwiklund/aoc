@@ -1,5 +1,3 @@
-use std::fs::read_to_string;
-
 pub fn solve(part: u32) -> u64 {
     fn is_repetitions(digits: &Vec<u8>, stride: usize) -> bool {
         stride > 0
@@ -8,7 +6,7 @@ pub fn solve(part: u32) -> u64 {
             && (0..digits.len()).all(|i| digits[i] == digits[i % stride])
     }
 
-    read_to_string("./src/d2_input.txt")
+    std::fs::read_to_string("./src/day2_input.txt")
         .unwrap()
         .split(',')
         .map(|s| s.split_once('-').unwrap())
