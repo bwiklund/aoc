@@ -3,9 +3,9 @@ use std::fs::read_to_string;
 pub fn solve(part: u32) -> u64 {
     fn max_first(v: &[u64]) -> (usize, u64) {
         // fixme scan once not twice
-        let n1_max = v.iter().max().cloned().unwrap_or(0);
-        let n1_idx = v.iter().position(|n| *n == n1_max).unwrap_or_default();
-        (n1_idx, n1_max)
+        let max = v.iter().max().cloned().unwrap_or(0);
+        let idx = v.iter().position(|n| *n == max).unwrap_or_default();
+        (idx, max)
     }
 
     read_to_string("./src/d3_input.txt")
@@ -17,20 +17,27 @@ pub fn solve(part: u32) -> u64 {
                 .collect::<Vec<u64>>()
         })
         .map(|batteries| {
-            // pick biggest number except the last one
-            // pick the biggest number after that number
-            let n = 2;
+            // pick the biggest number available, ignoring enough at the end to ensure we have enough digits left
+            let n = match part {
+                0 => 2,
+                1 => 12,
+                _ => panic!(),
+            };
 
             let mut digit_idxs = vec![];
             let mut min_idx = 0;
             for i in 0..n {
-                let n1_choices = &batteries[min_idx..batteries.len().saturating_sub(n - i - 1)];
-                let (n1_idx, _) = max_first(n1_choices);
-                digit_idxs.push(n1_idx + min_idx);
-                min_idx = n1_idx + 1;
+                let choices = &batteries[min_idx..batteries.len().saturating_sub(n - i - 1)];
+                let (idx, _) = max_first(choices);
+                digit_idxs.push(idx + min_idx);
+                min_idx += idx + 1;
             }
 
-            batteries[digit_idxs[0]] * 10 + batteries[digit_idxs[1]]
+            digit_idxs
+                .iter()
+                .enumerate()
+                .map(|(digit, &idx)| batteries[idx] * 10u64.pow((n - digit - 1) as u32))
+                .sum::<u64>()
         })
-        .sum::<u64>()
+        .sum()
 }
