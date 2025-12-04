@@ -23,6 +23,14 @@ impl Grid {
         self.cells[y as usize * self.w + x as usize]
     }
 
+    fn set(&mut self, x: i32, y: i32, val: bool) -> () {
+        if y < 0 || x < 0 || y >= self.h as i32 || x >= self.w as i32 {
+            return;
+        }
+
+        self.cells[y as usize * self.w + x as usize] = val;
+    }
+
     fn neighbor_count(&self, x: i32, y: i32) -> u32 {
         let mut count = 0;
         for iy in y - 1..=y + 1 {
@@ -37,10 +45,26 @@ impl Grid {
         }
         count
     }
+
+    fn get_accessible_coords(&self) -> Vec<(usize, usize)> {
+        (0..self.h)
+            .flat_map(|iy| {
+                (0..self.w).filter_map(move |ix| {
+                    if self.is_occupied(ix as i32, iy as i32)
+                        && self.neighbor_count(ix as i32, iy as i32) < 4
+                    {
+                        Some((ix, iy))
+                    } else {
+                        None
+                    }
+                })
+            })
+            .collect()
+    }
 }
 
-pub fn solve(part: u32) -> u32 {
-    let grid = Grid::from_vv(
+pub fn solve(part: u32) -> usize {
+    let mut grid = Grid::from_vv(
         std::fs::read_to_string("./src/day4_input.txt")
             .unwrap()
             .lines()
@@ -58,18 +82,22 @@ pub fn solve(part: u32) -> u32 {
     .unwrap();
 
     match part {
-        0 => (0..grid.h)
-            .map(|iy| {
-                (0..grid.w)
-                    .filter(|&ix| {
-                        grid.is_occupied(ix as i32, iy as i32)
-                            && grid.neighbor_count(ix as i32, iy as i32) < 4
-                    })
-                    .count() as u32
-            })
-            .sum::<u32>(),
+        0 => grid.get_accessible_coords().len(),
 
-        1 => panic!("idk yet"),
+        1 => {
+            let mut count = 0;
+            loop {
+                let coords = grid.get_accessible_coords();
+                if coords.len() == 0 {
+                    break;
+                }
+                count += coords.len();
+                for (x, y) in coords {
+                    grid.set(x as i32, y as i32, false);
+                }
+            }
+            count
+        }
 
         _ => panic!("there are no other parts"),
     }
@@ -82,5 +110,6 @@ mod tests {
     #[test]
     fn day4() {
         assert_eq!(solve(0), 1553);
+        assert_eq!(solve(1), 8442);
     }
 }
