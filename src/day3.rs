@@ -1,11 +1,14 @@
 use std::fs::read_to_string;
 
 pub fn solve(part: u32) -> u64 {
-    fn max_first(v: &[u64]) -> (usize, u64) {
-        // fixme scan once not twice
-        let max = v.iter().max().cloned().unwrap_or(0);
-        let idx = v.iter().position(|n| *n == max).unwrap_or_default();
-        (idx, max)
+    fn max_first(v: &[u64]) -> usize {
+        let mut max_idx = 0;
+        for idx in 0..v.len() {
+            if v[idx] > v[max_idx] {
+                max_idx = idx;
+            }
+        }
+        max_idx
     }
 
     read_to_string("./src/d3_input.txt")
@@ -28,8 +31,8 @@ pub fn solve(part: u32) -> u64 {
             let mut min_idx = 0;
             for i in 0..n {
                 let choices = &batteries[min_idx..batteries.len().saturating_sub(n - i - 1)];
-                let (idx, _) = max_first(choices);
-                digit_idxs.push(idx + min_idx);
+                let idx = max_first(choices);
+                digit_idxs.push(min_idx + idx);
                 min_idx += idx + 1;
             }
 
