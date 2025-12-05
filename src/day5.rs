@@ -5,10 +5,10 @@ enum IdRangeEntry {
 }
 
 impl IdRangeEntry {
-    fn get_n(&self) -> &u64 {
+    fn get_n(&self) -> u64 {
         match self {
-            Self::Left(n) => n,
-            Self::Right(n) => n,
+            Self::Left(n) => *n,
+            Self::Right(n) => *n,
         }
     }
 }
@@ -22,13 +22,13 @@ pub fn solve(part: u32) -> u64 {
         .unwrap()
         .lines()
         .for_each(|line| {
-            if line == "" {
+            if line.is_empty() {
                 is_ids_section = true
             } else if is_ids_section {
                 ids.push(line.parse::<u64>().unwrap())
             } else {
                 let (l, r) = line.split_once("-").unwrap();
-                ranges.push((l.parse::<u64>().unwrap(), r.parse::<u64>().unwrap() + 1));
+                ranges.push((l.parse::<u64>().unwrap(), r.parse::<u64>().unwrap() + 1)); // converting to non-inclusive range on the high side, so part 2 is simpler
             }
         });
 
@@ -49,7 +49,7 @@ pub fn solve(part: u32) -> u64 {
                 .flat_map(|(l, r)| vec![IdRangeEntry::Left(*l), IdRangeEntry::Right(*r)])
                 .collect();
 
-            ordered.sort_by_key(|r| *r.get_n());
+            ordered.sort_by_key(|r| r.get_n());
 
             let mut depth = 0;
             let mut count = 0u64;
@@ -67,7 +67,7 @@ pub fn solve(part: u32) -> u64 {
                     IdRangeEntry::Right(_) => -1,
                 };
 
-                current_id = *next_id;
+                current_id = next_id;
             }
 
             count
