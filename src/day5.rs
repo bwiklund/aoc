@@ -4,6 +4,15 @@ enum IdRangeEntry {
     Right(u64),
 }
 
+impl IdRangeEntry {
+    fn get_n(&self) -> &u64 {
+        match self {
+            Self::Left(n) => n,
+            Self::Right(n) => n,
+        }
+    }
+}
+
 pub fn solve(part: u32) -> u64 {
     let mut ranges = vec![];
     let mut ids = vec![];
@@ -40,41 +49,25 @@ pub fn solve(part: u32) -> u64 {
                 .flat_map(|(l, r)| vec![IdRangeEntry::Left(*l), IdRangeEntry::Right(*r)])
                 .collect();
 
-            ordered.sort_by_key(|r| match r {
-                IdRangeEntry::Left(n) => *n,
-                IdRangeEntry::Right(n) => *n,
-            });
-
-            // dbg!(&ordered);
+            ordered.sort_by_key(|r| *r.get_n());
 
             let mut depth = 0;
             let mut count = 0u64;
             let mut current_id = 0u64;
 
             for r in ordered {
-                let next_id;
-                match r {
-                    IdRangeEntry::Left(n) => {
-                        next_id = n;
+                let next_id = r.get_n();
 
-                        if depth > 0 {
-                            count += next_id - current_id;
-                        }
-
-                        depth += 1;
-                    }
-                    IdRangeEntry::Right(n) => {
-                        next_id = n;
-
-                        if depth > 0 {
-                            count += next_id - current_id;
-                        }
-
-                        depth -= 1;
-                    }
+                if depth > 0 {
+                    count += next_id - current_id;
                 }
 
-                current_id = next_id;
+                depth += match r {
+                    IdRangeEntry::Left(_) => 1,
+                    IdRangeEntry::Right(_) => -1,
+                };
+
+                current_id = *next_id;
             }
 
             count
