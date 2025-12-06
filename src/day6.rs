@@ -37,7 +37,50 @@ pub fn solve(part: u32) -> u64 {
                 .collect()
         }
 
-        1 => todo!("ASDF"),
+        1 => {
+            let digits_by_row = lines[0..lines.len() - 1]
+                .iter()
+                .map(|l| {
+                    l.chars()
+                        .map(|ch| match ch {
+                            '0'..='9' => Some(ch as u64 - '0' as u64),
+                            _ => None,
+                        })
+                        .collect()
+                })
+                .collect::<Vec<Vec<Option<u64>>>>();
+
+            let columns = (0..digits_by_row[0].len())
+                .map(|col_idx| {
+                    let digits = digits_by_row
+                        .iter()
+                        .filter_map(move |row| row[col_idx])
+                        .collect::<Vec<_>>();
+
+                    if digits.is_empty() {
+                        return None;
+                    }
+
+                    Some(
+                        digits
+                            .iter()
+                            .enumerate()
+                            .map(|(place, n)| 10u64.pow((digits.len() - place - 1) as u32) * n)
+                            .sum::<u64>(),
+                    )
+                })
+                .collect::<Vec<_>>()
+                .split(|n| match n {
+                    None => true,
+                    _ => false,
+                })
+                .map(|col| col.iter().map(|n| n.unwrap()).collect())
+                .collect::<Vec<_>>();
+
+            dbg!(&columns);
+
+            columns
+        }
 
         _ => panic!(),
     };
@@ -64,5 +107,6 @@ mod tests {
     #[test]
     fn day6() {
         assert_eq!(solve(0), 6891729672676);
+        assert_eq!(solve(1), 9770311947567);
     }
 }
