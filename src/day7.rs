@@ -14,8 +14,8 @@ pub fn solve(part: u32) -> u64 {
             l.chars()
                 .map(|ch| match ch {
                     '.' => Tile::None,
-                    '^' => Tile::Splitter,
                     'S' => Tile::Origin,
+                    '^' => Tile::Splitter,
                     _ => panic!(),
                 })
                 .collect()
@@ -47,9 +47,13 @@ pub fn solve(part: u32) -> u64 {
     }
 
     if part == 1 {
-        // variant of part one, but the beams can count how many paths took them there, and add them up and multiply them and... stuff...
+        // variant of part one, but the beams can count how many paths took them there, and add them up
         let mut beam = HashMap::<usize, u64>::new();
-        let mut split_count = 0;
+
+        fn divert_beam(beam: &mut HashMap<usize, u64>, idx: usize, tally: u64) {
+            beam.insert(idx, beam.get(&idx).unwrap_or(&0) + tally);
+        }
+
         for row in env {
             for (idx, t) in row.iter().enumerate() {
                 match t {
@@ -59,15 +63,15 @@ pub fn solve(part: u32) -> u64 {
                     }
                     Tile::Splitter => {
                         if let Some(&tally) = beam.get(&idx) {
-                            beam.insert(idx - 1, beam.get(&(idx - 1)).unwrap_or(&0) + tally);
+                            divert_beam(&mut beam, idx - 1, tally);
                             beam.remove(&idx);
-                            beam.insert(idx + 1, beam.get(&(idx + 1)).unwrap_or(&0) + tally);
+                            divert_beam(&mut beam, idx + 1, tally);
                         }
                     }
                 }
             }
         }
-        return beam.iter().map(|(_, v)| v).sum();
+        return beam.values().sum();
     }
 
     panic!();
