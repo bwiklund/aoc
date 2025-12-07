@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 enum Tile {
     None,
@@ -46,29 +46,28 @@ pub fn solve(part: u32) -> u64 {
         return split_count;
     }
 
-    // // this might be totally inadquate to the numbers involved but lets see if this can work... just traverse and count...?
     if part == 1 {
-        let x = env[0]
-            .iter()
-            .enumerate()
-            .find(|(_, t)| matches!(t, Tile::Origin))
-            .unwrap()
-            .0;
-
-        return rec_tachyon(&env, 1, x);
-
-        fn rec_tachyon(env: &Vec<Vec<Tile>>, depth: usize, x: usize) -> u64 {
-            if depth >= env.len() {
-                return 0;
-            }
-
-            match env[depth][x] {
-                Tile::Splitter => {
-                    rec_tachyon(env, depth + 1, x - 1) + rec_tachyon(env, depth + 1, x + 1)
+        // variant of part one, but the beams can count how many paths took them there, and add them up and multiply them and... stuff...
+        let mut beam = HashMap::<usize, u64>::new();
+        let mut split_count = 0;
+        for row in env {
+            for (idx, t) in row.iter().enumerate() {
+                match t {
+                    Tile::None => {}
+                    Tile::Origin => {
+                        beam.insert(idx, 1);
+                    }
+                    Tile::Splitter => {
+                        if let Some(&tally) = beam.get(&idx) {
+                            beam.insert(idx - 1, beam.get(&(idx - 1)).unwrap_or(&0) + tally);
+                            beam.remove(&idx);
+                            beam.insert(idx + 1, beam.get(&(idx + 1)).unwrap_or(&0) + tally);
+                        }
+                    }
                 }
-                _ => rec_tachyon(env, depth + 1, x),
             }
         }
+        return beam.iter().map(|(_, v)| v).sum();
     }
 
     panic!();
@@ -81,6 +80,6 @@ mod tests {
     #[test]
     fn day7() {
         assert_eq!(solve(0), 1499);
-        assert_eq!(solve(1), 0);
+        assert_eq!(solve(1), 24743903847942);
     }
 }
