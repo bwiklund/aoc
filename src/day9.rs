@@ -45,6 +45,8 @@ pub fn solve(part: u32) -> u64 {
                 // ok so making a grid and bucket filling it isn't gonna work because its huge (~10b cells). or maybe possible but really slow and not in the spirit of the question...
                 // instead, i think the prob description says that a line connects the tiles, meaning they are never perfectly adjacent, meaning that i think? we can check if any of the lines intersect the candidate rectangles, and that will be enough to reject them? for our purposes, "intersecting" will mean one end of the line is inside the rect (and not just along the border)
 
+                // further, this assumes there are no adjacent edges, which is possible even with the constraints in the comment above. however the real data doesn't have any and i already got the right answer sooooooooo bedtime
+
                 // n^3 baby lets gooooo
                 if red_tiles.iter().enumerate().any(|(i, a)| {
                     // easy case. any vertex inside the borders
