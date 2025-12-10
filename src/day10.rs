@@ -69,7 +69,7 @@ pub fn solve(part: u32) -> u64 {
     match part {
         0 => {
             // dbg!(machines);
-            dbg!(machines.iter().map(|m| m.buttons.len()).max());
+            // dbg!(machines.iter().map(|m| m.buttons.len()).max());
             // dbg!(vec_bool_to_mask(&machines[0].lights_desired));
             /*
 
@@ -89,7 +89,7 @@ pub fn solve(part: u32) -> u64 {
                 .map(|m| {
                     let mask_goal = m.lights_desired;
                     (0..(2u64 << m.buttons.len()))
-                        .map(|buttons_on| {
+                        .filter_map(|buttons_on| {
                             let mut lights = 0u64;
                             let mut flip_count = 0;
                             for (i, btn_mask) in m.buttons.iter().enumerate() {
@@ -98,14 +98,13 @@ pub fn solve(part: u32) -> u64 {
                                     flip_count += 1;
                                 }
                             }
-                            if mask_goal == lights {
-                                return flip_count;
+                            match mask_goal == lights {
+                                true => Some(flip_count),
+                                false => None,
                             }
-                            !0
                         })
                         .min()
-                        .unwrap()
-                    // panic!("Couldn't find a solution!");
+                        .expect("Couldn't find a solution.")
                 })
                 .sum()
         }
