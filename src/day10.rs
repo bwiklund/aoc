@@ -1,8 +1,13 @@
 #[derive(Debug)]
 struct Machine {
+    lights_desired: Vec<bool>,
+    buttons: Vec<Vec<u64>>,
+    joltage: Vec<u64>,
+}
+
+struct MachineBitmask {
     lights_desired: u64,
     buttons: Vec<u64>,
-    joltage: Vec<u64>,
 }
 
 fn parse_input() -> Vec<Machine> {
@@ -12,26 +17,22 @@ fn parse_input() -> Vec<Machine> {
         .map(
             |l| match l.split_ascii_whitespace().collect::<Vec<_>>().as_slice() {
                 [lights_desired_str, buttons_str @ .., joltage_str] => Machine {
-                    lights_desired: vec_bool_to_mask(
-                        &lights_desired_str
-                            .trim_matches(|c| c == '[' || c == ']')
-                            .chars()
-                            .map(|s| match s {
-                                '.' => false,
-                                '#' => true,
-                                _ => panic!(),
-                            })
-                            .collect(),
-                    ),
+                    lights_desired: lights_desired_str
+                        .trim_matches(|c| c == '[' || c == ']')
+                        .chars()
+                        .map(|s| match s {
+                            '.' => false,
+                            '#' => true,
+                            _ => panic!(),
+                        })
+                        .collect(),
                     buttons: buttons_str
                         .iter()
                         .map(|s| {
-                            vec_u64_to_mask(
-                                &s.trim_matches(|c| c == '(' || c == ')')
-                                    .split(',')
-                                    .map(|s| s.parse::<u64>().unwrap())
-                                    .collect(),
-                            )
+                            s.trim_matches(|c| c == '(' || c == ')')
+                                .split(',')
+                                .map(|s| s.parse::<u64>().unwrap())
+                                .collect()
                         })
                         .collect(),
                     joltage: joltage_str
@@ -86,6 +87,10 @@ pub fn solve(part: u32) -> u64 {
 
             machines
                 .iter()
+                .map(|m| MachineBitmask {
+                    lights_desired: vec_bool_to_mask(&m.lights_desired),
+                    buttons: m.buttons.iter().map(|b| vec_u64_to_mask(b)).collect(),
+                })
                 .map(|m| {
                     let mask_goal = m.lights_desired;
                     (0..(2u64 << m.buttons.len()))
@@ -109,7 +114,42 @@ pub fn solve(part: u32) -> u64 {
                 .sum()
         }
 
-        1 => 0,
+        1 => {
+            /*
+
+            ok part 2
+            - buttons can be pressed more than once
+            - order still doesn't matter
+            - a solution will be a count of presses per button, then summed
+            - joltages in the input dont seem to have any (or many) zeros, so not worth ruling out buttons early
+            - joltages are high enough that brute force will fail horribly. like 50^13 ~= 10^22 horribly
+            - is this potentially a linear algebra problem? with the constraint that the vector solution can't have negative elements? ehhhhhhhh... if you can't negate rows then you're not gonna be able to get rid of any
+
+            - another angle on the problem that might be a smaller space to solve in:
+            - each joltage has a subset of buttons that can contribute to it.
+            - so you know that the subset will be pushed 50 times, for example.
+            - each joltage has a subset of buttons and a number of times they will all be pressed.
+            - lets say each joltage has about a 5 button subset in the input data, and the average joltage is 50. order doesn't matter, only count, so that's still (on the order of) 50^5, which is 312,500,000 combos just for that button.
+            - we can also put some trivial upper bounds on the MAX number of times each button can be pressed. which might make it (optomistically) more like 10^5 for a subset = 100,000. however brute forcing that would still be 100,000^13 = an absurdly large space of 10^65.
+
+            - ok how about another angle
+            - since buttons will need to be pushed (usually) many times, what if we combine buttons.
+            - make a super-button of every button combined. use math (not iteration) to push it as many times as possible until the joltage has been filled (and overflowed some cols)
+            - no this is nothing
+
+            - ok how about iterating over this:
+            - if you're lucky there will be at least one joltage that's only affected by one button. there's your answer for that button, press it that many times and move forward (keeping track by subtracting the joltages. when we're done it'll be zero across the board)
+            - (repeat this step whenever you have a case of a button that is the only thing affecting a remaining joltage)
+            - if this isn't the case then branching...? but i don't wanna
+
+            */
+
+            // ok well here's a stupid test: i can think of counterexamples to the method above but maybe the inputs are just like... nice
+
+            // for m in machine {}
+
+            0
+        }
 
         _ => panic!(),
     }
@@ -122,6 +162,6 @@ mod tests {
     #[test]
     fn day10() {
         assert_eq!(solve(0), 411);
-        // assert_eq!(solve(1), 0);
+        assert_eq!(solve(1), 0);
     }
 }
