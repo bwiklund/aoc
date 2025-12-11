@@ -2,6 +2,7 @@
 struct Machine {
     lights_desired: Vec<bool>,
     buttons: Vec<Vec<u64>>,
+    #[allow(dead_code)]
     joltage: Vec<u64>,
 }
 

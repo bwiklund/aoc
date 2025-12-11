@@ -26,8 +26,20 @@ pub fn solve(part: u32) -> u64 {
 
     match part {
         0 => {
-            dbg!(devices);
-            0
+            dbg!(&devices);
+            // the problem doesn't say no loops, but if there were loops then the answer would be infinity. so there must not be.
+            // let seen = HashSet::<String>::new();
+            fn search(devices: &HashMap<String, Device>, id: &str) -> u64 {
+                match id {
+                    "out" => 1,
+                    _ => devices[id]
+                        .outputs
+                        .iter()
+                        .map(|oid| search(devices, oid))
+                        .sum::<u64>(),
+                }
+            }
+            search(&devices, "you")
         }
 
         1 => 0,
