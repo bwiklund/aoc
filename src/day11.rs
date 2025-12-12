@@ -45,7 +45,7 @@ pub fn solve(part: u32) -> u64 {
             // the addition of dac/fft is a wrinkle but the main problem here is that srv->out goes through way more nodes than you->out.
             // i think this is a dp problem, where we do math on the number of ways we've reached a node as we get there. so we need a bfs that has a list of (node, tally) we're cascading out to (possibly multiple copies of each node, merged), and keeps a running tally of how many paths got us there
             // ok nevermind this is how the fft/dac requirement fucks us lol
-            // 
+            //
             // fn search(
             //     devices: &HashMap<String, Device>,
             //     id: &str,
