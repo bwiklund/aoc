@@ -24,7 +24,7 @@ pub fn solve(part: u32) -> u64 {
         .lines()
         .for_each(|l| {
             if l.is_empty() {
-                return;
+                return; // ignore empty lines
             } else if l.contains(':') && l.contains('x') {
                 let parts = l.split_ascii_whitespace().collect::<Vec<_>>();
                 let (w, h) = parts[0].trim_end_matches(':').split_once('x').unwrap();
@@ -49,8 +49,7 @@ pub fn solve(part: u32) -> u64 {
                         _ => panic!(),
                     })
                     .collect();
-                let last = shapes.len() - 1;
-                let shape = &mut shapes[last];
+                let shape = shapes.last_mut().expect("can't be empty");
                 shape.h += 1;
                 shape.w = row.len();
                 shape.cells.extend(row);
