@@ -13,19 +13,9 @@ pub fn solve(part: u32) -> u64 {
         0 => reports
             .iter()
             .filter(|r| {
-                let mut going_up: Option<bool> = None;
-                for i in 1..r.len() {
-                    let diff = r[i] - r[i - 1];
-                    if diff.abs() < 1 || diff.abs() > 3 {
-                        return false;
-                    }
-                    if going_up.is_none() {
-                        going_up = Some(diff > 0);
-                    } else if going_up != Some(diff > 0) {
-                        return false;
-                    }
-                }
-                true
+                let diffs: Vec<i64> = r.windows(2).map(|w| w[1] - w[0]).collect();
+                diffs.iter().all(|d| (1..=3).contains(&d.abs()))
+                    && (diffs.iter().all(|&d| d > 0) || diffs.iter().all(|&d| d < 0))
             })
             .count() as u64,
 
