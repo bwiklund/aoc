@@ -37,32 +37,31 @@ pub fn solve(part: u32) -> i64 {
         let rules = rules
             .iter()
             .filter(|r| update.contains(&r.0) && update.contains(&r.1))
-            .map(|r| *r)
+            .copied()
             .collect::<Vec<_>>();
 
         let mut output = vec![];
-        let mut remaining = update.iter().collect::<HashSet<_>>();
+        let mut remaining = update.iter().copied().collect::<HashSet<_>>();
 
         // for each number in the input, do this:
         // if there are no rules saying it has to be after a number remaining in the input, append it to the output.
 
         // lots of copying here huh
-        while remaining.len() > 0 {
-            let mut found_p: Option<i64> = None;
-            for &&p in remaining.iter() {
-                if !rules
-                    .iter()
-                    .filter(|r| r.1 == p)
-                    .any(|r| remaining.contains(&r.0))
-                {
-                    found_p = Some(p);
-                }
-            }
-            if let Some(p) = found_p {
+        while !remaining.is_empty() {
+            if let Some(p) = remaining
+                .iter()
+                .find(|&&p| {
+                    !rules
+                        .iter()
+                        .filter(|r| r.1 == p)
+                        .any(|r| remaining.contains(&r.0))
+                })
+                .copied()
+            {
                 output.push(p);
                 remaining.remove(&p);
             } else {
-                panic!("This shouldn't be possible");
+                unreachable!("This shouldn't be possible");
             }
         }
 
