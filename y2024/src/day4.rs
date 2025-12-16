@@ -74,7 +74,24 @@ pub fn solve(part: u32) -> i64 {
             count
         }
 
-        1 => 0,
+        1 => {
+            let mut count = 0i64;
+            let search = "MAS";
+            let crosses = vec![(0, 0, 1, 1), (2, 0, -1, 1), (0, 2, 1, -1), (2, 2, -1, -1)];
+
+            for y in 0..grid.h as i64 {
+                for x in 0..grid.w as i64 {
+                    if 2 == crosses
+                        .iter()
+                        .filter(|d| grid.has_str(search, x + d.0, y + d.1, d.2, d.3))
+                        .count()
+                    {
+                        count += 1;
+                    }
+                }
+            }
+            count
+        }
 
         _ => unreachable!(),
     }
@@ -87,6 +104,6 @@ mod tests {
     #[test]
     fn day4() {
         assert_eq!(solve(0), 2557);
-        // assert_eq!(solve(1), 0);
+        assert_eq!(solve(1), 1854);
     }
 }
