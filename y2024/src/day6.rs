@@ -1,25 +1,33 @@
 use std::collections::HashSet;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 enum Tile {
     Empty,
     Start,
     Wall,
 }
 
+#[derive(Clone)]
 struct Grid {
     rows: Vec<Vec<Tile>>,
-    w: i64,
-    h: i64,
     guard_x: i64,
     guard_y: i64,
     guard_dir: i64,
     visited: HashSet<(i64, i64)>,
+    visited_dirs: HashSet<(i64, i64, i64)>,
+    // loop_points: HashSet<(i64, i64)>,
+}
+
+#[derive(PartialEq)]
+enum AdvanceResult {
+    Running,
+    LeftBoard,
+    Looped,
 }
 
 impl Grid {
     fn new(str: &str) -> Self {
-        let mut rows: Vec<Vec<Tile>> = str
+        let rows: Vec<Vec<Tile>> = str
             .lines()
             .map(|l| {
                 l.chars()
@@ -45,20 +53,17 @@ impl Grid {
                 })
             })
             .collect::<Vec<_>>()[0];
-        // rows[guard_y as usize][guard_x as usize] = Tile::Empty;
-        let w = rows[0].len() as i64;
-        let h = rows.len() as i64;
-        let mut visited = HashSet::new();
-        visited.insert((guard_x, guard_y));
-        Self {
+        let mut grid = Self {
             rows,
-            w,
-            h,
             guard_x,
             guard_y,
             guard_dir: 0,
-            visited,
-        }
+            visited: HashSet::new(),
+            visited_dirs: HashSet::new(),
+            // loop_points: HashSet::new(),
+        };
+        grid.mark_path();
+        grid
     }
 
     fn get(&self, x: i64, y: i64) -> Option<&Tile> {
@@ -67,7 +72,13 @@ impl Grid {
             .and_then(|row| row.get(x as usize))
     }
 
-    fn advance(&mut self) -> bool {
+    fn get_mut(&mut self, x: i64, y: i64) -> Option<&mut Tile> {
+        self.rows
+            .get_mut(y as usize)
+            .and_then(|row| row.get_mut(x as usize))
+    }
+
+    fn advance(&mut self) -> AdvanceResult {
         let (dx, dy) = self.guard_dir_to_vel();
         if let Some(Tile::Wall) = self.get(self.guard_x + dx, self.guard_y + dy) {
             self.guard_dir = (self.guard_dir + 1).rem_euclid(4);
@@ -76,25 +87,40 @@ impl Grid {
             self.guard_y += dy;
         }
 
-        // return whether we're still in bounds
-        if self.guard_x >= 0 && self.guard_x < self.w && self.guard_y >= 0 && self.guard_y < self.h
+        if self
+            .visited_dirs
+            .contains(&(self.guard_x, self.guard_y, self.guard_dir))
         {
-            self.visited.insert((self.guard_x, self.guard_y));
-            true
+            return AdvanceResult::Looped;
+        }
+
+        // return whether we're still in bounds
+        if self.get(self.guard_x, self.guard_y).is_some() {
+            self.mark_path();
+            AdvanceResult::Running
         } else {
-            false
+            AdvanceResult::LeftBoard
         }
     }
 
+    fn mark_path(&mut self) {
+        self.visited.insert((self.guard_x, self.guard_y));
+        self.visited_dirs
+            .insert((self.guard_x, self.guard_y, self.guard_dir));
+    }
+
+    fn add_barrier(&mut self, bx: i64, by: i64) {
+        self.get_mut(bx, by).map(|t| *t = Tile::Wall);
+    }
+
     fn guard_dir_to_vel(&self) -> (i64, i64) {
-        let (dx, dy) = match self.guard_dir.rem_euclid(4) {
+        match self.guard_dir.rem_euclid(4) {
             0 => (0, -1),
             1 => (1, 0),
             2 => (0, 1),
             3 => (-1, 0),
             _ => unreachable!(),
-        };
-        (dx, dy)
+        }
     }
 }
 
@@ -107,11 +133,33 @@ pub fn solve(part: u32) -> i64 {
 
     match part {
         0 => {
-            while grid.advance() {}
+            while grid.advance() == AdvanceResult::Running {}
             grid.visited.len() as i64
         }
 
-        1 => 0,
+        1 => {
+            let mut count = 0i64;
+            for y in 0..grid.rows.len() as i64 {
+                for x in 0..grid.rows[0].len() as i64 {
+                    if x == grid.guard_x && y == grid.guard_y {
+                        continue;
+                    }
+                    let mut cloned = grid.clone();
+                    cloned.add_barrier(x, y);
+                    loop {
+                        match cloned.advance() {
+                            AdvanceResult::Running => continue,
+                            AdvanceResult::LeftBoard => break,
+                            AdvanceResult::Looped => {
+                                count += 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            count
+        }
 
         _ => unreachable!(),
     }
@@ -123,7 +171,7 @@ mod tests {
 
     #[test]
     fn day6() {
-        assert_eq!(solve(0), 0);
-        // assert_eq!(solve(1), 0);
+        assert_eq!(solve(0), 5564);
+        assert_eq!(solve(1), 1976);
     }
 }
