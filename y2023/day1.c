@@ -17,36 +17,24 @@ void assert_eq(int a, int b) {
     printf("%d %d %s\n", a, b, a == b ? "pass" : "fail");
 }
 
+#define DIGIT_COUNT 10
+static const char *strs[DIGIT_COUNT] = {"zero",  "one",  "two", "three",
+                                        "four",  "five", "six", "seven",
+                                        "eight", "nine"};
+
 int next_int(Ctx *ctx, bool p2) {
     // drains a file char by char looking for (positive) ints. returns -1 when
     // done. returns -2 on newline
     char ch;
-
     Buff *buff = &ctx->buff;
-
     while ((ch = fgetc(ctx->f)) != EOF) {
         if (p2 && ch >= 'a' && ch <= 'z') {
             b_write(buff, ch);
-            if (b_ends_with(buff, "zero", 4))
-                return 0;
-            if (b_ends_with(buff, "one", 3))
-                return 1;
-            if (b_ends_with(buff, "two", 3))
-                return 2;
-            if (b_ends_with(buff, "three", 5))
-                return 3;
-            if (b_ends_with(buff, "four", 4))
-                return 4;
-            if (b_ends_with(buff, "five", 4))
-                return 5;
-            if (b_ends_with(buff, "six", 3))
-                return 6;
-            if (b_ends_with(buff, "seven", 5))
-                return 7;
-            if (b_ends_with(buff, "eight", 5))
-                return 8;
-            if (b_ends_with(buff, "nine", 4))
-                return 9;
+            for (int i = 0; i < DIGIT_COUNT; i++) {
+                if (b_ends_with(buff, strs[i])) {
+                    return i;
+                }
+            }
         } else if (ch == '\n') {
             b_clear(buff);
             return NEWLINE;
@@ -70,12 +58,7 @@ int solve(bool p2) {
     int last_num = -1;
     int sum = 0;
 
-    Ctx ctx = {.f = f,
-               .buff = {
-                   .buff = NULL,
-                   .buff_size = 0,
-                   .b_idx = 0,
-               }};
+    Ctx ctx = {.f = f, .buff = b_new()};
 
     while ((n = next_int(&ctx, p2)) != DONE) {
         if (n == NEWLINE) {

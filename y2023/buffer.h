@@ -1,6 +1,6 @@
 #include <stdbool.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 // a dynamic array implementation
 typedef struct {
@@ -9,13 +9,26 @@ typedef struct {
     int b_idx;
 } Buff;
 
-bool b_ends_with(Buff *buff, const char *str, int len) {
+Buff b_new() {
+    Buff b = {
+        .buff = NULL,
+        .buff_size = 0,
+        .b_idx = 0,
+    };
+    return b;
+}
+
+bool b_ends_with_n(Buff *buff, const char *str, int len) {
     if (buff->b_idx >= len &&
         (strncmp(buff->buff + buff->b_idx - len, str, len) == 0)) {
         return true;
     } else {
         return false;
     }
+}
+
+bool b_ends_with(Buff *buff, const char *str) {
+    return b_ends_with_n(buff, str, strlen(str));
 }
 
 // i could just set a max line height tbh. but i wanted to write this by hand
