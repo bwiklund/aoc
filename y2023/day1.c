@@ -1,62 +1,84 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define DONE -1
 #define NEWLINE -2
 
+typedef struct {
+    FILE *f;
+    char *buff;
+    int buff_size;
+    int b_idx;
+} Ctx;
+
 void assert_eq(int a, int b) {
     printf("%d %d %s\n", a, b, a == b ? "pass" : "fail");
 }
 
-bool buff_ends_with(char *buff, int *b_idx, const char *str, int len) {
-    if (*b_idx >= len && (strncmp(buff + *b_idx - len, str, len) == 0)) {
-        // *b_idx = 0;
+bool buff_ends_with(Ctx *ctx, const char *str, int len) {
+    if (ctx->b_idx >= len &&
+        (strncmp(ctx->buff + ctx->b_idx - len, str, len) == 0)) {
         return true;
     } else {
         return false;
     }
 }
 
-int next_int(FILE *f) {
+// i could just set a max line height tbh. but i wanted to write this by hand
+void ensure_size(Ctx *ctx) {
+    if (ctx->b_idx >= ctx->buff_size) {
+        int new_size = ctx->buff_size * 2;
+        char *doubled = malloc(new_size * sizeof(int));
+        memccpy(doubled, ctx->buff, ctx->buff_size, sizeof(int));
+        free(ctx->buff);
+        ctx->buff = doubled;
+        ctx->buff_size = new_size;
+    }
+}
+
+void buffer(Ctx *ctx, char ch) {
+    ensure_size(ctx);
+    ctx->buff[ctx->b_idx++] = ch;
+}
+
+int next_int(Ctx *ctx) {
     // drains a file char by char looking for (positive) ints. returns -1 when
     // done. returns -2 on newline
     char ch;
 
-    static char buff[100000];
-    static int b_idx = 0;
-
-    while ((ch = fgetc(f)) != EOF) {
+    while ((ch = fgetc(ctx->f)) != EOF) {
         if (ch >= 'a' && ch <= 'z') {
-            buff[b_idx++] = ch;
-            if (buff_ends_with(buff, &b_idx, "zero", 4))
+            buffer(ctx, ch);
+            if (buff_ends_with(ctx, "zero", 4))
                 return 0;
-            if (buff_ends_with(buff, &b_idx, "one", 3))
+            if (buff_ends_with(ctx, "one", 3))
                 return 1;
-            if (buff_ends_with(buff, &b_idx, "two", 3))
+            if (buff_ends_with(ctx, "two", 3))
                 return 2;
-            if (buff_ends_with(buff, &b_idx, "three", 5))
+            if (buff_ends_with(ctx, "three", 5))
                 return 3;
-            if (buff_ends_with(buff, &b_idx, "four", 4))
+            if (buff_ends_with(ctx, "four", 4))
                 return 4;
-            if (buff_ends_with(buff, &b_idx, "five", 4))
+            if (buff_ends_with(ctx, "five", 4))
                 return 5;
-            if (buff_ends_with(buff, &b_idx, "six", 3))
+            if (buff_ends_with(ctx, "six", 3))
                 return 6;
-            if (buff_ends_with(buff, &b_idx, "seven", 5))
+            if (buff_ends_with(ctx, "seven", 5))
                 return 7;
-            if (buff_ends_with(buff, &b_idx, "eight", 5))
+            if (buff_ends_with(ctx, "eight", 5))
                 return 8;
-            if (buff_ends_with(buff, &b_idx, "nine", 4))
+            if (buff_ends_with(ctx, "nine", 4))
                 return 9;
         } else if (ch == '\n') {
-            // b_idx = 0;
+            ctx->b_idx = 0;
             return NEWLINE;
         } else if (ch >= '0' && ch <= '9') {
-            // b_idx = 0;
+            ctx->b_idx = 0;
             return ch - '0';
         } else {
-            // b_idx = 0; // unreachable but lets reset just in case
+            ctx->b_idx = 0; // unreachable but lets reset just in case
         }
     }
     return DONE;
@@ -72,16 +94,23 @@ int main() {
     int last_num = -1;
     int sum = 0;
 
-    while ((n = next_int(f)) != DONE) {
+    Ctx ctx = {
+        .f = f,
+        .buff = malloc(4 * sizeof(int)),
+        .buff_size = 4,
+        .b_idx = 0,
+    };
+
+    while ((n = next_int(&ctx)) != DONE) {
         if (n == NEWLINE) {
-            printf("\n %d %d\n", first_num, last_num);
+            // printf("\n %d %d\n", first_num, last_num);
             int calibration_number = first_num * 10 + last_num;
             sum += calibration_number;
 
             first_num = -1;
             last_num = -1;
         } else {
-            printf("%d ", n);
+            // printf("%d ", n);
             if (first_num == -1) {
                 first_num = n;
             }
@@ -91,7 +120,8 @@ int main() {
 
     fclose(f);
 
-    assert_eq(sum, 55816);
+    // assert_eq(sum, 55816); // p1
+    assert_eq(sum, 54980); // p2
 
     return 0;
 }
