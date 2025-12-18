@@ -29,7 +29,8 @@ bool buff_ends_with(Ctx *ctx, const char *str, int len) {
 // i could just set a max line height tbh. but i wanted to write this by hand
 void ensure_size(Ctx *ctx) {
     if (ctx->b_idx >= ctx->buff_size) {
-        int new_size = ctx->buff_size * 2;
+        // starts 0, default 4, 1.5x growth rate
+        int new_size = ctx->buff_size == 0 ? 4 : ctx->buff_size * 1.5;
         char *doubled = malloc(new_size * sizeof(int));
         memccpy(doubled, ctx->buff, ctx->buff_size, sizeof(int));
         free(ctx->buff);
@@ -43,13 +44,13 @@ void buffer(Ctx *ctx, char ch) {
     ctx->buff[ctx->b_idx++] = ch;
 }
 
-int next_int(Ctx *ctx) {
+int next_int(Ctx *ctx, bool p2) {
     // drains a file char by char looking for (positive) ints. returns -1 when
     // done. returns -2 on newline
     char ch;
 
     while ((ch = fgetc(ctx->f)) != EOF) {
-        if (ch >= 'a' && ch <= 'z') {
+        if (p2 && ch >= 'a' && ch <= 'z') {
             buffer(ctx, ch);
             if (buff_ends_with(ctx, "zero", 4))
                 return 0;
@@ -84,7 +85,7 @@ int next_int(Ctx *ctx) {
     return DONE;
 }
 
-int main() {
+int solve(bool p2) {
     FILE *f = fopen("day1_input.txt", "r");
 
     // how to avoid magic numbers like this in c. or is this
@@ -96,21 +97,19 @@ int main() {
 
     Ctx ctx = {
         .f = f,
-        .buff = malloc(4 * sizeof(int)),
-        .buff_size = 4,
+        .buff = malloc(0 * sizeof(int)),
+        .buff_size = 0,
         .b_idx = 0,
     };
 
-    while ((n = next_int(&ctx)) != DONE) {
+    while ((n = next_int(&ctx, p2)) != DONE) {
         if (n == NEWLINE) {
-            // printf("\n %d %d\n", first_num, last_num);
             int calibration_number = first_num * 10 + last_num;
             sum += calibration_number;
 
             first_num = -1;
             last_num = -1;
         } else {
-            // printf("%d ", n);
             if (first_num == -1) {
                 first_num = n;
             }
@@ -120,8 +119,12 @@ int main() {
 
     fclose(f);
 
-    // assert_eq(sum, 55816); // p1
-    assert_eq(sum, 54980); // p2
+    return sum;
+}
+
+int main() {
+    assert_eq(solve(false), 55816);
+    assert_eq(solve(true), 54980);
 
     return 0;
 }
