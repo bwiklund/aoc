@@ -1,6 +1,7 @@
+#[derive(Copy, Clone)]
 struct FileSpan {
     id: Option<i32>,
-    len: i32,
+    len: usize,
 }
 
 type Disk = Vec<Option<i32>>;
@@ -28,7 +29,24 @@ pub fn solve(part: u32) -> i64 {
             checksum(disk)
         }
 
-        1 => 0,
+        1 => {
+            // this could be smarter and faster but i wanna move on to a new problem
+            let mut spans = parse_input_sparse(); // we need to remember original positions so we don't encounter them again and move them again
+            let mut disk = spans.to_disk(); // initial state
+
+            // backwards from known span positions
+            spans.reverse();
+            let mut head_pos = spans.iter().map(|s| s.len).sum();
+            for span in spans {
+                head_pos -= span.len;
+                if span.id.is_some()
+                    && let Some(dest_idx) = find_free_space(&mut disk, span.len, head_pos)
+                {
+                    move_file(&mut disk, head_pos, dest_idx, span.len);
+                }
+            }
+            checksum(disk)
+        }
 
         _ => unreachable!(),
     }
@@ -43,6 +61,28 @@ impl ToDisk for Vec<FileSpan> {
         self.iter()
             .flat_map(|span| (0..span.len).map(|_| span.id))
             .collect()
+    }
+}
+
+fn find_free_space(disk: &Disk, size_needed: usize, before_idx: usize) -> Option<usize> {
+    let mut free_size = 0;
+    for idx in 0..disk.len().min(before_idx) {
+        if disk[idx].is_none() {
+            free_size += 1;
+            if free_size >= size_needed {
+                return Some(idx - size_needed + 1);
+            }
+        } else {
+            free_size = 0;
+        }
+    }
+    None
+}
+
+fn move_file(disk: &mut Disk, from: usize, to: usize, len: usize) {
+    for i in 0..len {
+        disk[to + i] = disk[from + i];
+        disk[from + i] = None;
     }
 }
 
@@ -67,7 +107,7 @@ fn parse_input_sparse() -> Vec<FileSpan> {
                 true => Some((idx / 2) as i32),
                 false => None,
             },
-            len: len as i32,
+            len: len as usize,
         })
         .collect()
 }
@@ -79,6 +119,6 @@ mod tests {
     #[test]
     fn day9() {
         assert_eq!(solve(0), 6337367222422);
-        assert_eq!(solve(1), 0);
+        assert_eq!(solve(1), 6361380647183);
     }
 }
