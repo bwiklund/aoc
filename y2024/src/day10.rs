@@ -16,23 +16,20 @@ impl Grid {
     }
 }
 
-fn traverse(
-    grid: &Grid,
-    dest_counter: &mut HashSet<(i32, i32)>,
-    x: i32,
-    y: i32,
-    last_elevation: i32,
-) {
+fn traverse<F>(grid: &Grid, on_reach_dest: &mut F, x: i32, y: i32, last_elevation: i32)
+where
+    F: FnMut((i32, i32)),
+{
     let next_elev = last_elevation + 1;
     if grid.get(x, y) == Some(next_elev) {
         if next_elev == 9 {
-            dest_counter.insert((x, y));
+            on_reach_dest((x, y));
             return;
         }
-        traverse(grid, dest_counter, x + 1, y, next_elev);
-        traverse(grid, dest_counter, x - 1, y, next_elev);
-        traverse(grid, dest_counter, x, y + 1, next_elev);
-        traverse(grid, dest_counter, x, y - 1, next_elev);
+        traverse(grid, on_reach_dest, x + 1, y, next_elev);
+        traverse(grid, on_reach_dest, x - 1, y, next_elev);
+        traverse(grid, on_reach_dest, x, y + 1, next_elev);
+        traverse(grid, on_reach_dest, x, y - 1, next_elev);
     }
 }
 
@@ -59,14 +56,38 @@ pub fn solve(part: u32) -> i32 {
             for y in 0..grid.h {
                 for x in 0..grid.w {
                     let mut counter = HashSet::new();
-                    traverse(&grid, &mut counter, x, y, -1);
+                    traverse(
+                        &grid,
+                        &mut |(x, y)| {
+                            counter.insert((x, y));
+                        },
+                        x,
+                        y,
+                        -1,
+                    );
                     score += counter.len() as i32
                 }
             }
             score
         }
 
-        1 => 0,
+        1 => {
+            let mut score = 0;
+            for y in 0..grid.h {
+                for x in 0..grid.w {
+                    traverse(
+                        &grid,
+                        &mut |_| {
+                            score += 1;
+                        },
+                        x,
+                        y,
+                        -1,
+                    );
+                }
+            }
+            score
+        }
 
         _ => unreachable!(),
     }
@@ -79,6 +100,6 @@ mod tests {
     #[test]
     fn day10() {
         assert_eq!(solve(0), 816);
-        // assert_eq!(solve(1), 0);
+        assert_eq!(solve(1), 0);
     }
 }
