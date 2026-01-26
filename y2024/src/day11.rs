@@ -1,40 +1,61 @@
+use std::collections::HashMap;
+
 pub fn solve(part: u32) -> u64 {
-    let mut stones = std::fs::read_to_string("./src/day11_input.txt")
+    let stones = std::fs::read_to_string("./src/day11_input.txt")
         .unwrap()
         .split_ascii_whitespace()
         .map(|s| s.parse::<u64>().unwrap())
         .collect::<Vec<_>>();
 
     match part {
-        0 => {
-            for _ in 0..25 {
-                let mut new_stones = vec![];
-                for i in 0..stones.len() {
-                    let (next, extra) = blink(stones[i]);
-                    new_stones.push(next);
-                    extra.map(|extra| new_stones.push(extra));
-                }
-                stones = new_stones;
-            }
-            stones.len() as u64
-        }
+        0 => stones.iter().map(|s| blink_rec(*s, 25)).sum(),
 
-        1 => 0,
+        1 => stones
+            .iter()
+            .map(|s| blink_rec_memo(*s, 75, &mut HashMap::new()))
+            .sum(),
 
         _ => unreachable!(),
     }
+}
+
+fn blink_rec(stone: u64, depth_left: u32) -> u64 {
+    if depth_left == 0 {
+        return 1;
+    }
+    let (next, extra) = blink(stone);
+    return blink_rec(next, depth_left - 1)
+        + extra.map(|e| blink_rec(e, depth_left - 1)).unwrap_or(0);
+}
+
+fn blink_rec_memo(stone: u64, depth_left: u32, memo: &mut HashMap<(u64, u32), u64>) -> u64 {
+    if depth_left == 0 {
+        return 1;
+    }
+
+    if let Some(res) = memo.get(&(stone, depth_left)) {
+        return *res;
+    }
+
+    let (next, extra) = blink(stone);
+    let res = blink_rec_memo(next, depth_left - 1, memo)
+        + extra
+            .map(|e| blink_rec_memo(e, depth_left - 1, memo))
+            .unwrap_or(0);
+
+    memo.insert((stone, depth_left), res);
+
+    res
 }
 
 fn blink(stone: u64) -> (u64, Option<u64>) {
     if stone == 0 {
         return (1, None);
     }
-    let as_str = stone.to_string();
-    if as_str.len() % 2 == 0 {
-        return (
-            as_str[..as_str.len() / 2].parse().unwrap(),
-            Some(as_str[as_str.len() / 2..].parse().unwrap()),
-        );
+    let digit_count = (stone as f64).log10().floor() as u32 + 1;
+    if digit_count % 2 == 0 {
+        let divisor = 10u64.pow(digit_count / 2);
+        return (stone / divisor, Some(stone % divisor));
     }
     return (stone.checked_mul(2024).unwrap(), None);
 }
@@ -45,7 +66,7 @@ mod tests {
 
     #[test]
     fn day11() {
-        assert_eq!(solve(0), 0);
-        // assert_eq!(solve(1), 0);
+        assert_eq!(solve(0), 216996);
+        assert_eq!(solve(1), 257335372288947);
     }
 }
