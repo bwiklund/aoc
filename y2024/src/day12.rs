@@ -24,6 +24,11 @@ impl<T> Grid<T> {
     }
 }
 
+struct Region {
+    cells: HashSet<(i32, i32)>,
+    borders: HashSet<(i32, i32, i32, i32)>,
+}
+
 pub fn solve(part: u32) -> i64 {
     let input = std::fs::read_to_string("./src/day12_input.txt")
         .unwrap()
@@ -37,54 +42,65 @@ pub fn solve(part: u32) -> i64 {
         cells: input,
     };
 
-    match part {
-        0 => {
-            let mut regions = vec![];
-            for y in 0..grid.h {
-                for x in 0..grid.w {
-                    let search = *grid.get(x, y).unwrap();
-                    if search == '.' {
-                        continue;
-                    }
+    let mut regions = vec![];
+    for y in 0..grid.h {
+        for x in 0..grid.w {
+            let search = *grid.get(x, y).unwrap();
+            if search == '.' {
+                continue;
+            }
 
-                    let mut region = HashSet::new();
-                    let mut bucket_queue = VecDeque::new();
+            let mut cells = HashSet::new();
+            let mut bucket_queue = VecDeque::new();
 
-                    bucket_queue.push_back((x, y));
-                    while let Some((x, y)) = bucket_queue.pop_front() {
-                        if grid.get(x, y) == Some(&search) {
-                            region.insert((x, y));
-                            grid.set(x, y, '.');
+            bucket_queue.push_back((x, y));
+            while let Some((x, y)) = bucket_queue.pop_front() {
+                if grid.get(x, y) == Some(&search) {
+                    cells.insert((x, y));
+                    grid.set(x, y, '.');
 
-                            bucket_queue.push_back((x + 1, y));
-                            bucket_queue.push_back((x - 1, y));
-                            bucket_queue.push_back((x, y + 1));
-                            bucket_queue.push_back((x, y - 1));
-                        }
-                    }
-
-                    if region.len() > 0 {
-                        regions.push(region);
-                    }
+                    bucket_queue.push_back((x + 1, y));
+                    bucket_queue.push_back((x, y + 1));
+                    bucket_queue.push_back((x - 1, y));
+                    bucket_queue.push_back((x, y - 1));
                 }
             }
-            regions
+
+            let borders = cells
                 .iter()
-                .map(|r| {
-                    let area = r.len();
-                    let perimeter = r
-                        .iter()
-                        .map(|(x, y)| {
-                            (!r.contains(&(x + 1, y + 0)) as i64)
-                                + (!r.contains(&(x - 1, y + 0)) as i64)
-                                + (!r.contains(&(x + 0, y + 1)) as i64)
-                                + (!r.contains(&(x + 0, y - 1)) as i64)
-                        })
-                        .sum::<i64>();
-                    area as i64 * perimeter
+                .flat_map(|(x, y)| {
+                    let mut cell_borders = vec![];
+                    let mut add_border_if_exists = |&x, &y, dx, dy| {
+                        if !cells.contains(&(x + dx, y + dy)) {
+                            cell_borders.push((x, y, dx, dy))
+                        }
+                    };
+                    add_border_if_exists(x, y, 1, 0);
+                    add_border_if_exists(x, y, 0, 1);
+                    add_border_if_exists(x, y, -1, 0);
+                    add_border_if_exists(x, y, 0, -1);
+                    cell_borders
                 })
-                .sum()
+                .collect();
+
+            if cells.len() > 0 {
+                regions.push(Region {
+                    cells: cells,
+                    borders: borders,
+                });
+            }
         }
+    }
+
+    match part {
+        0 => regions
+            .iter()
+            .map(|r| {
+                let area = r.cells.len();
+                let perimeter = r.borders.len();
+                area as i64 * perimeter as i64
+            })
+            .sum(),
 
         1 => 0,
 
@@ -98,7 +114,7 @@ mod tests {
 
     #[test]
     fn day12() {
-        assert_eq!(solve(0), 0);
-        // assert_eq!(solve(1), 0);
+        assert_eq!(solve(0), 1573474);
+        assert_eq!(solve(1), 0);
     }
 }
