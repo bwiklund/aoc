@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 struct Grid<T> {
     cells: Vec<Vec<T>>,
     w: i32,
@@ -30,6 +32,8 @@ impl std::fmt::Debug for Grid<Option<Thing>> {
                     Some(Thing::Wall) => '#',
                     Some(Thing::Robot) => '@',
                     Some(Thing::Barrel) => 'O',
+                    Some(Thing::BarrelLeft) => '[',
+                    Some(Thing::BarrelRight) => ']',
                     None => '.',
                 };
                 write!(f, "{}", ch)?;
@@ -43,8 +47,11 @@ impl std::fmt::Debug for Grid<Option<Thing>> {
 #[derive(Copy, Clone)]
 enum Thing {
     Robot,
-    Barrel,
     Wall,
+    Barrel,
+    // for part 2 this is good enough. i don't need the exercise of doing this with more complex objects because we already made sunshine heavy industries.
+    BarrelLeft,
+    BarrelRight,
 }
 
 fn parse_input() -> (Grid<Option<Thing>>, Vec<(i32, i32)>) {
@@ -87,6 +94,48 @@ fn parse_input() -> (Grid<Option<Thing>>, Vec<(i32, i32)>) {
     (grid, moves)
 }
 
+// if returns false, a block is blocked and nothing can move. else all the blocks returned are valid to move
+fn gather_affected_blocks(
+    grid: &mut Grid<Option<Thing>>,
+    blocks: &mut HashSet<(i32, i32)>,
+    (x, y): (i32, i32),
+    (dx, dy): (i32, i32),
+) -> bool {
+    let mut scan_x = x;
+    let mut scan_y = y;
+    for _ in 0.. {
+        scan_x += dx;
+        scan_y += dy;
+        match grid.get(scan_x, scan_y) {
+            None | Some(Some(Thing::Wall)) => {
+                return false;
+            }
+            Some(None) => {
+                return true;
+            }
+            _ => {
+                blocks.insert((scan_x, scan_y));
+            }
+        }
+    }
+    false
+}
+
+fn move_blocks(grid: &mut Grid<Option<Thing>>, blocks: HashSet<(i32, i32)>, (dx, dy): (i32, i32)) {
+    let move_things: Vec<_> = blocks
+        .iter()
+        .map(|&(x, y)| {
+            let thing = *grid.get(x, y).unwrap();
+            grid.set(x, y, None);
+            ((x, y), thing)
+        })
+        .collect();
+
+    for ((x, y), thing) in move_things {
+        grid.set(x + dx, y + dy, thing);
+    }
+}
+
 fn move_robot(grid: &mut Grid<Option<Thing>>, (dx, dy): (i32, i32)) {
     let (x, y) = grid
         .cells
@@ -104,35 +153,29 @@ fn move_robot(grid: &mut Grid<Option<Thing>>, (dx, dy): (i32, i32)) {
         .unwrap();
 
     // scan out until we find an empty cell. if there is one, move everything we scanned over by 1. else stop
-    let mut scan_x = x;
-    let mut scan_y = y;
-    for _ in 0.. {
-        scan_x += dx;
-        scan_y += dy;
-        match grid.get(scan_x, scan_y) {
-            None | Some(Some(Thing::Wall)) => {
-                break;
-            }
-            Some(None) => {
-                while (scan_x, scan_y) != (x, y) {
-                    grid.set(
-                        scan_x,
-                        scan_y,
-                        grid.get(scan_x - dx, scan_y - dy).unwrap().clone(),
-                    );
-                    scan_x -= dx;
-                    scan_y -= dy;
-                }
-                grid.set(x, y, None);
-                break;
-            }
-            _ => continue,
-        }
+    let mut blocks = HashSet::new();
+    blocks.insert((x, y)); // the robot too
+    let can_move = gather_affected_blocks(grid, &mut blocks, (x, y), (dx, dy));
+    if can_move {
+        move_blocks(grid, blocks, (dx, dy));
     }
 }
 
 fn gps_coord(x: i32, y: i32) -> i32 {
     x + y * 100
+}
+
+fn gps_checksum(grid: Grid<Option<Thing>>) -> i32 {
+    grid.cells
+        .iter()
+        .enumerate()
+        .flat_map(|(y, row)| {
+            row.iter().enumerate().map(move |(x, thing)| match thing {
+                Some(Thing::Barrel) => gps_coord(x as i32, y as i32),
+                _ => 0,
+            })
+        })
+        .sum::<i32>()
 }
 
 pub fn solve(part: u32) -> i64 {
@@ -145,19 +188,13 @@ pub fn solve(part: u32) -> i64 {
                 // dbg!(&grid);
                 // std::thread::sleep(Duration::from_millis(16));
             }
-            grid.cells
-                .iter()
-                .enumerate()
-                .flat_map(|(y, row)| {
-                    row.iter().enumerate().map(move |(x, thing)| match thing {
-                        Some(Thing::Barrel) => gps_coord(x as i32, y as i32),
-                        _ => 0,
-                    })
-                })
-                .sum::<i32>() as i64
+            gps_checksum(grid) as i64
         }
 
-        1 => 0,
+        1 => {
+            // let grid = inflate_grid
+            0
+        },
 
         _ => unreachable!(),
     }
