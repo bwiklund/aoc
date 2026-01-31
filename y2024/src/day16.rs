@@ -77,47 +77,34 @@ fn pathfind(
     (x, y): (i32, i32),
     dir: i8,
     (end_x, end_y): (i32, i32),
-) -> Option<i32> {
+) -> HashMap<(i32, i32, i8), i32> {
     let mut scores = HashMap::new();
 
     let mut queue = vec![];
     queue.push((x, y, dir, 0));
 
     while let Some((x, y, dir, score)) = take_lowest_score(&mut queue) {
-        match grid.get(x, y) {
-            Some(Cell::Path) => {
-                scores.entry((x, y, dir)).or_insert(i32::MAX);
-                let existing_score = scores.get(&(x, y, dir)).unwrap().clone();
-                if score >= existing_score {
-                    // dbg!("better path at", x, y, dir, score, existing_score);
-                    // don't bother, we've been here already and this is worse
+        if let Some(Cell::Path) = grid.get(x, y) {
+            scores.entry((x, y, dir)).or_insert(i32::MAX);
+            let existing_score = scores.get(&(x, y, dir)).unwrap().clone();
+            if score < existing_score {
+                // record new low score and path further
+                scores.insert((x, y, dir), score);
+
+                if (end_x, end_y) == (x, y) {
+                    // we found one way to the exit, nothing else to do from this leaf
                 } else {
-                    // print_progress(grid, scores);
-                    // std::thread::sleep(std::time::Duration::from_millis(100));
-
-                    // record new low score and path further
-                    scores.insert((x, y, dir), score);
-
-                    if (end_x, end_y) == (x, y) {
-                        // print_progress(grid, scores);
-                        // we're done
-                        return Some(score);
-                    } else {
-                        // forward costs 1
-                        let (dx, dy) = dir_to_vec(dir);
-                        queue.push((x + dx, y + dy, dir, score + 1));
-
-                        // spin left and right
-                        queue.push((x, y, (dir - 1).rem_euclid(4), score + 1000));
-                        queue.push((x, y, (dir + 1).rem_euclid(4), score + 1000));
-                    }
+                    // forward costs 1, left and right cost 1000
+                    let (dx, dy) = dir_to_vec(dir);
+                    queue.push((x + dx, y + dy, dir, score + 1));
+                    queue.push((x, y, (dir - 1).rem_euclid(4), score + 1000));
+                    queue.push((x, y, (dir + 1).rem_euclid(4), score + 1000));
                 }
             }
-            _ => continue,
         }
     }
 
-    return None;
+    scores
 }
 
 pub fn solve(part: u32) -> i32 {
@@ -154,9 +141,20 @@ pub fn solve(part: u32) -> i32 {
     };
 
     match part {
-        0 => pathfind(&mut grid, start, 0, end).unwrap(),
+        0 => {
+            let scores = pathfind(&mut grid, start, 0, end);
+            *scores
+                .get(&(end.0, end.1, 0))
+                .unwrap_or(&i32::MAX)
+                .min(scores.get(&(end.0, end.1, 1)).unwrap_or(&i32::MAX))
+                .min(scores.get(&(end.0, end.1, 2)).unwrap_or(&i32::MAX))
+                .min(scores.get(&(end.0, end.1, 3)).unwrap_or(&i32::MAX))
+        }
 
-        1 => 0,
+        1 => {
+            let scores = pathfind(&mut grid, start, 0, end);
+            score
+        }
 
         _ => unreachable!(),
     }
