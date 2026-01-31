@@ -1,4 +1,4 @@
-use std::{collections::HashMap, i32};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 struct Grid<T> {
@@ -107,6 +107,35 @@ fn pathfind(
     scores
 }
 
+fn winning_path_size(
+    scores: &HashMap<(i32, i32, i8), i32>,
+    (end_x, end_y): (i32, i32),
+    final_score: i32,
+) -> i32 {
+    let mut optimal = HashSet::new();
+
+    let mut queue = vec![];
+    queue.push((end_x, end_y, 0, final_score));
+    queue.push((end_x, end_y, 1, final_score));
+    queue.push((end_x, end_y, 2, final_score));
+    queue.push((end_x, end_y, 3, final_score));
+
+    while let Some((x, y, dir, score)) = queue.pop() {
+        if scores.get(&(x, y, dir)).is_some_and(|s| *s == score) {
+            dbg!((x, y, score));
+            optimal.insert((x, y));
+
+            // queue backwards and turns
+            let (dx, dy) = dir_to_vec(dir);
+            queue.push((x - dx, y - dy, dir, score - 1));
+            queue.push((x, y, (dir - 1).rem_euclid(4), score - 1000));
+            queue.push((x, y, (dir + 1).rem_euclid(4), score - 1000));
+        }
+    }
+
+    optimal.len() as i32
+}
+
 pub fn solve(part: u32) -> i32 {
     let mut start: (i32, i32) = (0, 0);
     let mut end: (i32, i32) = (0, 0);
@@ -143,21 +172,25 @@ pub fn solve(part: u32) -> i32 {
     match part {
         0 => {
             let scores = pathfind(&mut grid, start, 0, end);
-            *scores
-                .get(&(end.0, end.1, 0))
-                .unwrap_or(&i32::MAX)
-                .min(scores.get(&(end.0, end.1, 1)).unwrap_or(&i32::MAX))
-                .min(scores.get(&(end.0, end.1, 2)).unwrap_or(&i32::MAX))
-                .min(scores.get(&(end.0, end.1, 3)).unwrap_or(&i32::MAX))
+            get_best_score(&scores, end)
         }
 
         1 => {
             let scores = pathfind(&mut grid, start, 0, end);
-            score
+            winning_path_size(&scores, end, get_best_score(&scores, end))
         }
 
         _ => unreachable!(),
     }
+}
+
+fn get_best_score(scores: &HashMap<(i32, i32, i8), i32>, end: (i32, i32)) -> i32 {
+    *scores
+        .get(&(end.0, end.1, 0))
+        .unwrap_or(&i32::MAX)
+        .min(scores.get(&(end.0, end.1, 1)).unwrap_or(&i32::MAX))
+        .min(scores.get(&(end.0, end.1, 2)).unwrap_or(&i32::MAX))
+        .min(scores.get(&(end.0, end.1, 3)).unwrap_or(&i32::MAX))
 }
 
 #[cfg(test)]
@@ -167,6 +200,6 @@ mod tests {
     #[test]
     fn day16() {
         assert_eq!(solve(0), 89460);
-        // assert_eq!(solve(1), 0);
+        assert_eq!(solve(1), 504);
     }
 }
